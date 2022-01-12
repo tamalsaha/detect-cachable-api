@@ -6,8 +6,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes"
-
 	//	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,15 +25,22 @@ func main() {
 	cfg.QPS = 100
 	cfg.Burst = 100
 
-	detector, err := NewCachable(kubernetes.NewForConfigOrDie(cfg).Discovery())
+	detector, err := NewDynamicCachable(cfg)
 	if err != nil {
 		panic(err)
 	}
-	cache, err := detector.GVK(schema.GroupVersionKind{
+	gvk := schema.GroupVersionKind{
 		Group:   "ui.k8s.appscode.com",
 		Version: "v1alpha1",
 		Kind:    "GenericResource",
-	})
+	}
+
+	cache, err := detector.GVK(gvk)
+	if meta.IsNoMatchError(err) {
+		fmt.Println(err)
+	}
+
+	cache, err = detector.GVK(gvk)
 	if err != nil {
 		panic(err)
 	}
